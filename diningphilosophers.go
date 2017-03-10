@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+// Philosopher eats food with a left and right chopstick.
 type Philosopher struct {
 	name  string
 	id    int         // index, for logs
@@ -29,8 +30,8 @@ func (p *Philosopher) eat() {
 	fmt.Printf("    %s picks up right: %p\n", p.name, p.right)
 	//fmt.Printf("%d|%s eats %d%% | %p %p\n", p.id, p.name, p.food/fullness, p.left, p.right)
 	p.food += 1
-	time.Sleep(time.Millisecond * 100)
-	p.left.Unlock()
+	time.Sleep(time.Millisecond * 100) // eat
+	p.left.Unlock()                    // Put down chopstick
 	p.right.Unlock()
 	fmt.Printf("    %s eats %d/%d\n", p.name, p.food, fullness)
 }
@@ -40,7 +41,7 @@ func (p *Philosopher) String() string {
 }
 
 var wg *sync.WaitGroup
-var fullness int = 200
+var fullness int = 100
 
 func main() {
 	var n = 5
@@ -75,8 +76,14 @@ func main() {
 		if right == n {
 			right = 0
 		}
-		philosphers[i].left = chopsticks[left]
-		philosphers[i].right = chopsticks[right]
+		if i == n-1 {
+			philosphers[i].left = chopsticks[left]
+			philosphers[i].right = chopsticks[right]
+		} else { // Hierarchy Solution
+			philosphers[i].right = chopsticks[left]
+			philosphers[i].left = chopsticks[right]
+		}
+
 		fmt.Println("start: ", i, philosphers[i])
 		go Dine(philosphers[i], i)
 	}
