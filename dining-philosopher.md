@@ -2,37 +2,44 @@
 
 ## Problem
 
-N philosophers begin eating, with N chopsticks, one between each pair of philosophers. The Philosophers pick up one chopstick, another, eat, and then put the chopsticks down and think. Eventually, each philosopher picks up the chopstick to their left and **deadlocks**, waiting for the right chopstick. Unable to eat, they starve.
+`N` philosophers eat around a table together, with `N` chopsticks, one between each pair of philosophers. The Philosophers pick up one chopstick, another, eat, and then put the chopsticks down and think. Eventually, each philosopher picks up the chopstick to their left and **deadlocks**, waiting for the right chopstick. Unable to eat, they starve.
 
 
 ```
-Butler:, Left: e2c0 Right: e2c8 // Representing Chopsticks
-bhooks:, Left: e2c8 Right: e2d0 // by their reference in memory
-Simone:, Left: e2d0 Right: e2d8
-Bingen:, Left: e2d8 Right: e2e0
-Arendt:, Left: e2e0 Right: e2c0
+Butler Left: e2c0 Right: e2c8 // Representing Chopsticks
+bhooks Left: e2c8 Right: e2d0 // by their reference in memory
+Simone Left: e2d0 Right: e2d8
+Bingen Left: e2d8 Right: e2e0
+Arendt Left: e2e0 Right: e2c0
 ```
 
-Chopsticks are `sync.Mutex` **locks**, Mutex locks are synchronization tools for concurrent programs which limit access to a resource for multliple threads. This script represents the philosophers:
+### Synchronization in Concurrent Programming
+
+Chopsticks are `sync.Mutex` **locks**, Mutex locks limit access to a single resource for multliple threads. So when a program is performing `N` operations, which need shared resources, the lock ensures that the resources aren't being used by another thread -- or rather, that the chopstick isn't being used by another philosopher.
+
+This script represents the philosopher `struct` and `eat()` method:
 
 
 ```
 type Philosopher struct {
     name  string
-    left  *sync.Mutex // a chopstick
-    right *sync.Mutex // a chopstick
+    left  *sync.Mutex                  // a chopstick
+    right *sync.Mutex                  // a chopstick
     food  int
 }
 
 func (p *Philosopher) eat() {
     p.left.Lock()                      // Pick up chopsticks
     p.right.Lock()
-    p.food += 1
-    time.Sleep(time.Millisecond * 100) // Eat food
+    p.food += 1                        // Eat food
+    time.Sleep(time.Millisecond * 100)
     p.left.Unlock()                    // Put down chopsticks
     p.right.Unlock()
+                                       // Think
 }
 ```
+
+When the philosopher `eats()` in a loop, they'll all reach for the left:
 
 > fatal error: all goroutines are asleep - deadlock!
 
