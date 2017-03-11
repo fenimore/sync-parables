@@ -28,37 +28,31 @@ type Barber struct {
 }
 
 type Customer struct {
-	name   string
-	state  int
-	myTurn chan struct{}
-}
-
-type Checker interface {
-	Check(chan *Customer)
+	name  string
+	state int
 }
 
 func NewBarber() (b *Barber) {
 	return &Barber{
-		name:    "Sam",
-		state:   sleeping,
-		wokenUp: make(chan struct{}),
+		name:  "Sam",
+		state: sleeping,
 	}
 }
 
 func NewCustomer() (c *Customer) {
 	return &Customer{
-		name:   "George",
-		state:  going,
-		myTurn: make(chan struct{}),
+		name:  "George",
+		state: going,
 	}
 }
 
 // Barber thread
 func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 	for {
+		b.state = checking
 		// checking the waiting room
 		fmt.Println("Checking for customer")
-		time.Sleep(time.Millisecond * 10)
+		time.Sleep(time.Millisecond * 100)
 		select {
 		case c := <-wr:
 			HairCut(c, b)
@@ -110,7 +104,7 @@ func (c *Customer) Check(wr chan *Customer) bool {
 	case wr <- c:
 		return true
 	default:
-		//Waiting room is full, leave
+		//Waiting room is full
 		return false
 	}
 
