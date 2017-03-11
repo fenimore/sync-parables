@@ -51,8 +51,8 @@ func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 	for {
 		b.state = checking
 		// checking the waiting room
-		fmt.Println("Checking for customer")
-		time.Sleep(time.Millisecond * 100)
+		fmt.Printf("Checking, %d, for customer room: %d\n", b.state, len(wr))
+		time.Sleep(time.Millisecond * 10)
 		select {
 		case c := <-wr:
 			HairCut(c, b)
@@ -60,8 +60,8 @@ func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 			fmt.Printf("Sleeping Barber\n")
 			b.state = sleeping
 			c := <-wakers
+			fmt.Printf("Woken by %p\n", c)
 			HairCut(c, b)
-			b.state = checking
 		}
 	}
 }
@@ -71,62 +71,44 @@ func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 // is passed along to the channel handling it's haircut etc
 func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Customer) {
 	// arrive
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 150)
 	// Check on barber
-	fmt.Printf("Customer comes in to: %d\n", b.state)
+	defer fmt.Printf("Customer %p comes in to: %d, room: %d\n", c, b.state, len(wr))
 	switch b.state {
 	case sleeping:
 		select {
 		case wakers <- c:
 		default:
-			// wakers is full
+			wr <- c // wakers is full
 		}
 		return
-	case cutting:
+	case cutting, checking:
 		select {
 		case wr <- c:
 		default:
 			// full, leave shop
-		}
-	case checking:
-		select {
-		case wr <- c:
-		default:
-			// full, leave shop
+			wg.Done()
 		}
 	}
-	wg.Done()
-}
-
-// Customer Methods
-func (c *Customer) Check(wr chan *Customer) bool {
-	select {
-	case wr <- c:
-		return true
-	default:
-		//Waiting room is full
-		return false
-	}
-
 }
 
 func HairCut(c *Customer, b *Barber) {
 	b.state = cutting
 	c.state = cutting
 	// cut some hair
-	fmt.Printf("Cutting %p's hair\n", c)
+	fmt.Printf("Cutting  %p's hair\n", c)
 	time.Sleep(time.Millisecond * 50)
+	wg.Done()
 }
 
-// var lock *sync.Mutex
-var wg *sync.WaitGroup
+var wg *sync.WaitGroup // Amount of potentional customers
 
 func main() {
 	//lock = new(sync.Mutex)
 	b := NewBarber()
 	b.name = "Sam"
 	WaitingRoom := make(chan *Customer, 5) // 5 chairs
-	Wakers := make(chan *Customer, 1)      // only one waker at a time?
+	Wakers := make(chan *Customer, 1)      // only one waker at a time
 	go func() {
 		barber(b, WaitingRoom, Wakers)
 	}()
@@ -135,6 +117,7 @@ func main() {
 	wg.Add(10)
 	// Spawn customers
 	for i := 0; i < n; i++ {
+		time.Sleep(time.Millisecond * 20)
 		c := NewCustomer()
 		go customer(c, b, WaitingRoom, Wakers)
 	}
