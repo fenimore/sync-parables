@@ -6,9 +6,9 @@ A **synchronization** problem for concurrent programs.
 
 ## Problem
 
-A barber checks on the waiting room and then either cuts hair or goes to sleep (if there is no one in the waiting room). Concurrently, the **Customer** checks on the barber and if the barber is sleeping, the barber wakes up.
+A barber checks on the waiting room and then either cuts hair or goes to sleep (if there is no one in the waiting room). Concurrently, the customer checks on the barber and if the barber is sleeping, the barber wakes up.
 
-If the customer checks on the barber when the barber is checking on an _empty_ waiting room, the barber would go back to sleep and the customer would go wait, possibly forever.
+If the customer checks on the barber when the >barber is checking on an _empty_ waiting room, the barber would go back to sleep and the customer would go wait, possibly forever.
 
 ## Solution
 
