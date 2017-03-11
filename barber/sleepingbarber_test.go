@@ -7,19 +7,14 @@ import (
 )
 
 func TestChecking(t *testing.T) {
-	//lock = new(sync.Mutex)
 	b := NewBarber()
 	b.name = "Sam"
 	WaitingRoom := make(chan *Customer, 15) // 5 chairs
-	Wakers := make(chan *Customer, 1)       // only one waker at a time
-	go func() {
-		barber(b, WaitingRoom, Wakers)
-	}()
+	Wakers := make(chan *Customer, 1)       // only one waker at a tim
+	go barber(b, WaitingRoom, Wakers)
 	time.Sleep(time.Millisecond * 100)
 	wg = new(sync.WaitGroup)
-	//n := 10
 	wg.Add(8)
-
 	time.Sleep(time.Millisecond * 50)
 	c := new(Customer)
 	go customer(c, b, WaitingRoom, Wakers)
@@ -47,9 +42,7 @@ func TestTenCustomers(t *testing.T) {
 	b.name = "Sam"
 	WaitingRoom := make(chan *Customer, 15) // 5 chairs
 	Wakers := make(chan *Customer, 1)       // only one waker at a tim
-	go func() {
-		barber(b, WaitingRoom, Wakers)
-	}()
+	go barber(b, WaitingRoom, Wakers)
 	time.Sleep(time.Millisecond * 100)
 	wg = new(sync.WaitGroup)
 	n := 10

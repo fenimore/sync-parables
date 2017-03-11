@@ -129,35 +129,15 @@ func main() {
 	b.name = "Sam"
 	WaitingRoom := make(chan *Customer, 15) // 5 chairs
 	Wakers := make(chan *Customer, 1)       // only one waker at a time
-	go func() {
-		barber(b, WaitingRoom, Wakers)
-	}()
+	go barber(b, WaitingRoom, Wakers)
 	time.Sleep(time.Millisecond * 100)
 	wg = new(sync.WaitGroup)
-	//n := 10
+	n := 10
 	wg.Add(10)
 	// Spawn customers
-	// for i := 0; i < n; i++ {
-	//	time.Sleep(time.Millisecond * 50)
-	//	c := new(Customer)
-	//	go customer(c, b, WaitingRoom, Wakers)
-	// }
-
-	time.Sleep(time.Millisecond * 50)
-	c := new(Customer)
-	go customer(c, b, WaitingRoom, Wakers)
-	time.Sleep(time.Millisecond * 10)
-	c = new(Customer)
-	go customer(c, b, WaitingRoom, Wakers)
-	time.Sleep(time.Millisecond * 300)
-	for i := 0; i < 3; i++ {
-		time.Sleep(time.Millisecond * 10)
-		c = new(Customer)
-		go customer(c, b, WaitingRoom, Wakers)
-	}
-	for i := 0; i < 3; i++ {
-		time.Sleep(time.Millisecond * 200)
-		c = new(Customer)
+	for i := 0; i < n; i++ {
+		time.Sleep(time.Millisecond * 50)
+		c := new(Customer)
 		go customer(c, b, WaitingRoom, Wakers)
 	}
 
