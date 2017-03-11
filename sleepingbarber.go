@@ -97,7 +97,7 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 	defer b.Unlock()
 	switch b.state {
 	case sleeping:
-		fmt.Printf("Sleeping barber %p, room: %d, wake: %d\n", c, len(wr), len(wakers))
+		fmt.Printf("Sleeping barber %s, room: %d, wake: %d\n", c, len(wr), len(wakers))
 		select {
 		case wakers <- c:
 		default:
