@@ -91,7 +91,7 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 	time.Sleep(time.Millisecond * 50)
 	// Check on barber
 	b.Lock()
-	fmt.Printf("Customer %s checks %s barber room: %d, w %d - customer: %s\n",
+	fmt.Printf("Customer %s checks %s barber | room: %d, w %d - customer: %s\n",
 		c, stateLog[b.state], len(wr), len(wakers), b.customer)
 	switch b.state {
 	case sleeping:

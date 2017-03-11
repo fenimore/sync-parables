@@ -91,38 +91,35 @@ The `Customer` is printed as the last four characters of their _memory address_ 
 === RUN   TestChecking
 Checking waiting room: 0
 Sleeping Barber ZzzzZzz - <nil>
-Customer 4020 checks sleeping barber room: 0, w 0 - customer: <nil>
-Sleeping barber 4020, room: 0, wake: 0
-Woken by 4020
-Cutting  4020's hair
-Customer a000 checks  cutting barber room: 0, w 0 - customer: 4020
+Customer 12140 checks sleeping barber | room: 0, w 0 - customer: <nil>
+Woken by 12140
+Cutting  12140's hair
+Customer 12150 checks  cutting barber | room: 0, w 0 - customer: 12140
 Checking waiting room: 1
-Cutting  a000's hair
+Cutting  12150's hair
 Checking waiting room: 0
 Sleeping Barber ZzzzZzz - <nil>
-Customer a0a0 checks sleeping barber room: 0, w 0 - customer: <nil>
-Sleeping barber a0a0, room: 0, wake: 0
-Woken by a0a0
-Customer 0f40 checks sleeping barber room: 0, w 0 - customer: <nil>
-Sleeping barber 0f40, room: 0, wake: 0
-Customer 4030 checks sleeping barber room: 0, w 1 - customer: <nil>
-Sleeping barber 4030, room: 0, wake: 1
-Cutting  a0a0's hair
+Customer 121d0 checks sleeping barber | room: 0, w 0 - customer: <nil>
+Customer 74e30 checks sleeping barber | room: 0, w 0 - customer: <nil>
+Customer 74e40 checks sleeping barber | room: 0, w 1 - customer: <nil>
+Woken by 121d0
+Cutting  121d0's hair
 Checking waiting room: 1
-Cutting  4030's hair
-Customer 4040 checks  cutting barber room: 0, w 1 - customer: 4030
+Cutting  74e40's hair
+Customer 74e50 checks  cutting barber | room: 0, w 1 - customer: 74e40
 Checking waiting room: 1
-Cutting  4040's hair
-Customer 10c0 checks  cutting barber room: 0, w 1 - customer: 4040
+Cutting  74e50's hair
+Customer c8150 checks  cutting barber | room: 0, w 1 - customer: 74e50
 Checking waiting room: 1
-Cutting  10c0's hair
-Customer 40b0 checks  cutting barber room: 0, w 1 - customer: 10c0
+Cutting  c8150's hair
+Customer 12270 checks  cutting barber | room: 0, w 1 - customer: c8150
 Checking waiting room: 1
-Cutting  40b0's hair
+Cutting  12270's hair
 Checking waiting room: 0
 Sleeping Barber ZzzzZzz - <nil>
-Woken by 0f40
-Cutting  0f40's hair
+Woken by 74e30
+Cutting  74e30's hair
 Checking waiting room: 0
-No more customers today
+
+No more customers for the day
 ```
