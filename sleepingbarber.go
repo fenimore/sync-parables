@@ -6,21 +6,32 @@ import (
 	"time"
 )
 
-// Barber
 const (
 	sleeping = iota
 	checking
 	cutting
 )
 
+var stateLog = map[int]string{
+	0: "sleeping",
+	1: "checking",
+	2: " cutting",
+}
+var wg *sync.WaitGroup // Amount of potentional customers
+
 type Barber struct {
 	sync.Mutex
-	name  string
-	state int
+	name     string
+	state    int
+	customer *Customer
 }
 
 type Customer struct {
 	name string
+}
+
+func (c *Customer) String() string {
+	return fmt.Sprintf("%p", c)[8:]
 }
 
 func NewBarber() (b *Barber) {
@@ -30,31 +41,29 @@ func NewBarber() (b *Barber) {
 	}
 }
 
-func NewCustomer() (c *Customer) {
-	return &Customer{
-		name: "George",
-	}
-}
-
-// Barber thread
+// Barber goroutine
+// Checks for customers
+// Sleeps - wait for wakers to wake him up
 func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 	for {
 		b.Lock()
 		b.state = checking
+		b.customer = nil
 		b.Unlock()
 		// checking the waiting room
-		fmt.Printf("Checking, %s, for customer room: %d\n", stateLog[b.state], len(wr))
-		time.Sleep(time.Millisecond * 10)
+		fmt.Printf("Checking waiting room: %d\n", len(wr))
+		time.Sleep(time.Millisecond * 100)
 		select {
 		case c := <-wr:
 			HairCut(c, b)
-		default:
-			fmt.Printf("Sleeping Barber\n")
+		default: // Waiting room is empty
+			fmt.Printf("Sleeping Barber ZzzzZzz - %s\n", b.customer)
 			b.Lock()
 			b.state = sleeping
+			b.customer = nil
 			b.Unlock()
 			c := <-wakers
-			fmt.Printf("Woken by %p\n", c)
+			fmt.Printf("Woken by %s\n", c)
 			HairCut(c, b)
 		}
 	}
@@ -63,10 +72,15 @@ func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 func HairCut(c *Customer, b *Barber) {
 	b.Lock()
 	b.state = cutting
+	b.customer = c
 	b.Unlock()
 	// cut some hair
-	fmt.Printf("Cutting  %p's hair\n", c)
+	fmt.Printf("Cutting  %s's hair\n", c)
 	time.Sleep(time.Millisecond * 100)
+	b.Lock()
+	b.state = cutting
+	b.customer = nil
+	b.Unlock()
 	wg.Done()
 }
 
@@ -75,8 +89,8 @@ func HairCut(c *Customer, b *Barber) {
 // is passed along to the channel handling it's haircut etc
 func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Customer) {
 	// arrive
-	fmt.Printf("Customer %p comes in to: %s barber, room: %d, wake: %d\n",
-		c, stateLog[b.state], len(wr), len(wakers))
+	fmt.Printf("Customer %s comes in to: %s barber, room: %d, wake: %d - customer: %s\n",
+		c, stateLog[b.state], len(wr), len(wakers), b.customer)
 	time.Sleep(time.Millisecond * 50)
 	// Check on barber
 	b.Lock()
@@ -87,7 +101,6 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 		select {
 		case wakers <- c:
 		default:
-			fmt.Printf("Someone else is waking the barber, %p goes to waiting room\n", c)
 			select {
 			case wr <- c:
 			default:
@@ -113,13 +126,6 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 	}
 }
 
-var wg *sync.WaitGroup // Amount of potentional customers
-var stateLog = map[int]string{
-	0: "sleeping",
-	1: "checking",
-	2: " cutting",
-}
-
 func main() {
 	//lock = new(sync.Mutex)
 	b := NewBarber()
@@ -129,15 +135,17 @@ func main() {
 	go func() {
 		barber(b, WaitingRoom, Wakers)
 	}()
+	time.Sleep(time.Millisecond * 100)
 	wg = new(sync.WaitGroup)
 	n := 10
 	wg.Add(10)
 	// Spawn customers
 	for i := 0; i < n; i++ {
 		time.Sleep(time.Millisecond * 50)
-		c := NewCustomer()
+		c := new(Customer)
 		go customer(c, b, WaitingRoom, Wakers)
 	}
 
 	wg.Wait()
+	fmt.Println("No more customers for the day")
 }
