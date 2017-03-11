@@ -1,30 +1,26 @@
 # Sleeping Barber
 
+A **synchronization** problem for concurrent programs.
+
 > run `go test -v` for example scenarios
 
 ## Problem
 
-A **synchronization** problem for multiple threads -- a Barber checks on the waiting room and then cuts hair or goes to sleep (if there is no one in the waiting room). Concurrently, the **Customer** checks on the Barber; if the Barber is sleeping, the Barber wakes up, is  The Barber _thread_ goes from checking on customers to either cutting hair or going to sleep (if there is no one in the waiting room.
+A barber checks on the waiting room and then either cuts hair or goes to sleep (if there is no one in the waiting room). Concurrently, the **Customer** checks on the barber and if the barber is sleeping, the barber wakes up.
 
-```
-type Barber struct {
-    name     string
-    sync.Mutex         // for controlling access to state
-    state    int       // sleeping/checking/cutting
-    customer *Customer
-}
-```
-
-From [Wikipedia](https://en.wikipedia.org/wiki/Sleeping_barber_problem),
-
-> The problems are all related to the fact that the actions by both the barber and the customer (checking the waiting room, entering the shop, taking a waiting room chair, etc.) all take an unknown amount of time. For example, a customer may arrive and observe that the barber is cutting hair, so he goes to the waiting room. While he is on his way, the barber finishes the haircut he is doing and goes to check the waiting room. Since there is no one there (the customer not having arrived yet), he goes back to his chair and sleeps. The barber is now waiting for a customer and the customer is waiting for the barber.
-
-The problem boils down to synchronizing change of state of the barber (sleeping, checking, cutting) and of the customer (checking, waiting, cutting).
-
+If the customer checks on the barber when the barber is checking on an _empty_ waiting room, the barber would go back to sleep and the customer would go wait, possibly forever.
 
 ## Solution
 
 The solution relies on a **Mutex** lock for assuring only one thread can change state at a time -- so that way the barber is never checking for the customers when a customer is checking for the barber (which would cause a **deadlock**). As long as the barber _or_ the customer is checking, the mutex should block the other from doing so.
+
+```
+type Barber struct {
+    sync.Mutex         // for controlling access to state
+    state    int       // sleeping/checking/cutting
+    customer *Customer // customer currently being served
+}
+```
 
 ### Using channels to handle state
 
@@ -68,20 +64,24 @@ func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
         time.Sleep(time.Millisecond * 100)
         select {
         case c := <-wr:        // cuts hair of first person in queue
-            b.Unlock()
-            HairCut(c, b)
+            HairCut(c, b)      // unlocks during cut
+            b.Unlock()         // barber is cutting
         default:               // if waiting room is empty
-            b.Unlock()
-            b.Lock()           // go to sleep on chair Zzzz
             b.state = sleeping
             b.customer = nil
-            b.Unlock()
+            b.Unlock()         // go to sleep on chair Zzzz
             c := <-wakers      // block, wait for waker to arrive
+            b.Lock()
             HairCut(c, b)
+            b.Unlock()
         }
     }
 }
 ```
+
+## Terminating the program
+
+This could go on forever, but instead one can `add()` to a `sync.WaitGroup` struct for every customer, and `wg.Done()` after the customer leaves.
 
 ## Example output
 

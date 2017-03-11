@@ -31,7 +31,7 @@ type Customer struct {
 }
 
 func (c *Customer) String() string {
-	return fmt.Sprintf("%p", c)[8:]
+	return fmt.Sprintf("%p", c)[7:]
 }
 
 func NewBarber() (b *Barber) {
@@ -56,34 +56,32 @@ func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 		time.Sleep(time.Millisecond * 100)
 		select {
 		case c := <-wr:
-			b.Unlock()
 			HairCut(c, b)
+			b.Unlock()
 		default: // Waiting room is empty
 			fmt.Printf("Sleeping Barber ZzzzZzz - %s\n", b.customer)
-			b.Unlock()
-			b.Lock()
 			b.state = sleeping
 			b.customer = nil
 			b.Unlock()
 			c := <-wakers
+			b.Lock()
 			fmt.Printf("Woken by %s\n", c)
 			HairCut(c, b)
+			b.Unlock()
 		}
 	}
 }
 
 func HairCut(c *Customer, b *Barber) {
-	b.Lock()
 	b.state = cutting
 	b.customer = c
-	b.Unlock()
 	// cut some hair
-	fmt.Printf("Cutting  %s's hair\n", c)
-	time.Sleep(time.Millisecond * 100)
-	b.Lock()
 	b.state = cutting
 	b.customer = nil
 	b.Unlock()
+	fmt.Printf("Cutting  %s's hair\n", c)
+	time.Sleep(time.Millisecond * 100)
+	b.Lock()
 	wg.Done()
 }
 
@@ -97,7 +95,6 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 	b.Lock()
 	fmt.Printf("Customer %s checks %s barber room: %d, w %d - customer: %s\n",
 		c, stateLog[b.state], len(wr), len(wakers), b.customer)
-
 	switch b.state {
 	case sleeping:
 		fmt.Printf("Sleeping barber %s, room: %d, wake: %d\n", c, len(wr), len(wakers))
@@ -113,13 +110,14 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 	case cutting:
 		select {
 		case wr <- c:
-		default:
-			// full, leave shop
+		default: // full waiting room, leave shop
 			wg.Done()
 		}
 	case checking:
 		panic("Customer shouldn't check for the Barber when Barber is Checking the waiting room")
 	}
+	fmt.Printf("Customer %s checked %s barber room: %d, w %d - customer: %s\n",
+		c, stateLog[b.state], len(wr), len(wakers), b.customer)
 	b.Unlock()
 }
 
@@ -130,6 +128,7 @@ func main() {
 	WaitingRoom := make(chan *Customer, 15) // 5 chairs
 	Wakers := make(chan *Customer, 1)       // only one waker at a time
 	go barber(b, WaitingRoom, Wakers)
+
 	time.Sleep(time.Millisecond * 100)
 	wg = new(sync.WaitGroup)
 	n := 10
