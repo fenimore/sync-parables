@@ -20,9 +20,9 @@ var stateLog = map[int]string{
 var wg *sync.WaitGroup // Amount of potentional customers
 
 type Barber struct {
+	name string
 	sync.Mutex
-	name     string
-	state    int
+	state    int // sleeping/checking/cutting
 	customer *Customer
 }
 
@@ -108,21 +108,13 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 			}
 		}
 	// TODO: fallthrough?
-	case cutting:
+	case cutting, checking:
 		select {
 		case wr <- c:
 		default:
 			// full, leave shop
 			wg.Done()
 		}
-	case checking:
-		select {
-		case wr <- c:
-		default:
-			// full, leave shop
-			wg.Done()
-		}
-
 	}
 }
 
