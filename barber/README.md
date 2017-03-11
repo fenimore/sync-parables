@@ -2,7 +2,7 @@
 
 ## Problem
 
-A **synchronization** problem for multiple threads -- that of a **Barber** cutting hair and a stream of **Customers**. The Barber _thread_ goes from checking on customers to either cutting hair or going to sleep (if there is no one in the waiting room.
+A **synchronization** problem for multiple threads -- a Barber checks on the waiting room and then cuts hair or goes to sleep (if there is no one in the waiting room). Concurrently, the **Customer** checks on the Barber; if the Barber is sleeping, the Barber wakes up, is  The Barber _thread_ goes from checking on customers to either cutting hair or going to sleep (if there is no one in the waiting room.
 
 ```
 type Barber struct {
@@ -17,7 +17,7 @@ From [Wikipedia](https://en.wikipedia.org/wiki/Sleeping_barber_problem),
 
 > The problems are all related to the fact that the actions by both the barber and the customer (checking the waiting room, entering the shop, taking a waiting room chair, etc.) all take an unknown amount of time. For example, a customer may arrive and observe that the barber is cutting hair, so he goes to the waiting room. While he is on his way, the barber finishes the haircut he is doing and goes to check the waiting room. Since there is no one there (the customer not having arrived yet), he goes back to his chair and sleeps. The barber is now waiting for a customer and the customer is waiting for the barber.
 
-The problem boils down to synchronizing change of state of the barber (sleeping/checking/cutting) and of the customer (checking, waiting, cutting).
+The problem boils down to synchronizing change of state of the barber (sleeping, checking, cutting) and of the customer (checking, waiting, cutting).
 
 
 ## Solution
@@ -26,12 +26,12 @@ Typically the solution relies on a **Mutex** lock for ensuring only one thread c
 
 ### Using channels to handle state
 
-Rather than depending `sync.Mutex` _for the customer_, however, my solution handles customer state by passing customers into **channels**, `chan *Customer` -- that is, **Communicating Sequential Processess**, or CSP techniques. The customer enters and checks the barber's state, and then passes into a _buffered_ channel according to the state
+Rather than depending `sync.Mutex` _for the customer_, however, my solution handles customer state by passing customers into **channels**, `chan *Customer` -- that is, **Communicating Sequential Processess**, or CSP techniques. The customer enters and checks the barber's state, and then passes into a _buffered_ channel, the waiting room.
 
 ```
+
 func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Customer) {
     b.Lock()                   // Arrive and Check on Barber
-    defer b.Unlock()
     switch b.state {
     case sleeping:
         select {
@@ -42,12 +42,15 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
             default:           // if full, leave
             }
         }
-    case cutting, checking:
+    case cutting:
         select {
         case wr <- c:         // Go to waiting room if Barber is cutting
         default:              // if full waiting, leave shop
         }
+    case checking:
+        panic("Customer shouldn't check for the Barber when the barber is checking the waiting room")
     }
+    b.Unlock()
 }
 ```
 
@@ -57,14 +60,15 @@ The barber thread, when sleeping, blocks on the `wakers` channel, so when a cust
 func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
     for {
         b.Lock()
+        defer b.Unlock()
         b.state = checking     // barber goes to check the waiting room
         b.customer = nil       // current served customer
-        b.Unlock()
         time.Sleep(time.Millisecond * 100)
         select {
         case c := <-wr:        // cuts hair of first person in queue
             HairCut(c, b)
         default:               // if waiting room is empty
+            b.Unlock()
             b.Lock()           // go to sleep on chair Zzzz
             b.state = sleeping
             b.customer = nil

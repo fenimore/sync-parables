@@ -1,4 +1,4 @@
-package main
+package barber
 
 import (
 	"fmt"
@@ -47,17 +47,20 @@ func NewBarber() (b *Barber) {
 func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 	for {
 		b.Lock()
+		defer b.Unlock()
 		b.state = checking
 		b.customer = nil
-		b.Unlock()
+
 		// checking the waiting room
 		fmt.Printf("Checking waiting room: %d\n", len(wr))
 		time.Sleep(time.Millisecond * 100)
 		select {
 		case c := <-wr:
+			b.Unlock()
 			HairCut(c, b)
 		default: // Waiting room is empty
 			fmt.Printf("Sleeping Barber ZzzzZzz - %s\n", b.customer)
+			b.Unlock()
 			b.Lock()
 			b.state = sleeping
 			b.customer = nil
@@ -89,12 +92,12 @@ func HairCut(c *Customer, b *Barber) {
 // is passed along to the channel handling it's haircut etc
 func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Customer) {
 	// arrive
-	fmt.Printf("Customer %s comes in to: %s barber, room: %d, wake: %d - customer: %s\n",
-		c, stateLog[b.state], len(wr), len(wakers), b.customer)
 	time.Sleep(time.Millisecond * 50)
 	// Check on barber
 	b.Lock()
-	defer b.Unlock()
+	fmt.Printf("Customer %s checks %s barber room: %d, w %d - customer: %s\n",
+		c, stateLog[b.state], len(wr), len(wakers), b.customer)
+
 	switch b.state {
 	case sleeping:
 		fmt.Printf("Sleeping barber %s, room: %d, wake: %d\n", c, len(wr), len(wakers))
@@ -107,15 +110,17 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 				wg.Done()
 			}
 		}
-	// TODO: fallthrough?
-	case cutting, checking:
+	case cutting:
 		select {
 		case wr <- c:
 		default:
 			// full, leave shop
 			wg.Done()
 		}
+	case checking:
+		panic("Customer shouldn't check for the Barber when Barber is Checking the waiting room")
 	}
+	b.Unlock()
 }
 
 func main() {
@@ -129,12 +134,30 @@ func main() {
 	}()
 	time.Sleep(time.Millisecond * 100)
 	wg = new(sync.WaitGroup)
-	n := 10
+	//n := 10
 	wg.Add(10)
 	// Spawn customers
-	for i := 0; i < n; i++ {
-		time.Sleep(time.Millisecond * 50)
-		c := new(Customer)
+	// for i := 0; i < n; i++ {
+	//	time.Sleep(time.Millisecond * 50)
+	//	c := new(Customer)
+	//	go customer(c, b, WaitingRoom, Wakers)
+	// }
+
+	time.Sleep(time.Millisecond * 50)
+	c := new(Customer)
+	go customer(c, b, WaitingRoom, Wakers)
+	time.Sleep(time.Millisecond * 10)
+	c = new(Customer)
+	go customer(c, b, WaitingRoom, Wakers)
+	time.Sleep(time.Millisecond * 300)
+	for i := 0; i < 3; i++ {
+		time.Sleep(time.Millisecond * 10)
+		c = new(Customer)
+		go customer(c, b, WaitingRoom, Wakers)
+	}
+	for i := 0; i < 3; i++ {
+		time.Sleep(time.Millisecond * 200)
+		c = new(Customer)
 		go customer(c, b, WaitingRoom, Wakers)
 	}
 

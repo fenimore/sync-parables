@@ -2,7 +2,7 @@
 
 ## Problem
 
-`N` philosophers eat around a table together, with `N` chopsticks, one between each pair of philosophers. The Philosophers pick up one chopstick, another, eat, and then put the chopsticks down and think. Eventually, each philosopher picks up the chopstick to their left and **deadlocks**, waiting for the right chopstick. Unable to eat, they starve.
+`N` philosophers eat around a table together, with `N` chopsticks, one between each pair of philosophers. The Philosophers pick up one chopstick, another, eat, and then put the chopsticks down and think. Eventually, each philosopher picks up the chopstick to their left and **deadlocks**, waiting for their right chopstick. Unable to eat, they starve.
 
 
 ```
