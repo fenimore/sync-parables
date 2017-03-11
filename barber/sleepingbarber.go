@@ -75,14 +75,12 @@ func barber(b *Barber, wr chan *Customer, wakers chan *Customer) {
 func HairCut(c *Customer, b *Barber) {
 	b.state = cutting
 	b.customer = c
-	// cut some hair
-	b.state = cutting
-	b.customer = nil
 	b.Unlock()
 	fmt.Printf("Cutting  %s's hair\n", c)
 	time.Sleep(time.Millisecond * 100)
 	b.Lock()
 	wg.Done()
+	b.customer = nil
 }
 
 // customer goroutine
@@ -97,7 +95,7 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 		c, stateLog[b.state], len(wr), len(wakers), b.customer)
 	switch b.state {
 	case sleeping:
-		fmt.Printf("Sleeping barber %s, room: %d, wake: %d\n", c, len(wr), len(wakers))
+		// fmt.Printf("Sleeping barber %s, room: %d, wake: %d\n", c, len(wr), len(wakers))
 		select {
 		case wakers <- c:
 		default:
@@ -116,8 +114,6 @@ func customer(c *Customer, b *Barber, wr chan<- *Customer, wakers chan<- *Custom
 	case checking:
 		panic("Customer shouldn't check for the Barber when Barber is Checking the waiting room")
 	}
-	fmt.Printf("Customer %s checked %s barber room: %d, w %d - customer: %s\n",
-		c, stateLog[b.state], len(wr), len(wakers), b.customer)
 	b.Unlock()
 }
 

@@ -48,7 +48,7 @@ func TestTenCustomersFiveChairs(t *testing.T) {
 	n := 10
 	wg.Add(10)
 	for i := 0; i < n; i++ {
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 10)
 		c := new(Customer)
 		go customer(c, b, WaitingRoom, Wakers)
 	}
