@@ -26,11 +26,9 @@ var names = map[int]string{
 }
 
 type Table struct {
-	sync.Mutex
-	paper  chan int
-	grass  chan int
-	match  chan int
-	signal chan int
+	paper chan int
+	grass chan int
+	match chan int
 }
 
 func arbitrate(t *Table, smokers [3]chan int) {
@@ -59,60 +57,35 @@ func arbitrate(t *Table, smokers [3]chan int) {
 
 func smoker(t *Table, name string, smokes int, signal chan int) {
 	var chosen = -1
-	has := map[int]bool{
-		paper: paper == smokes,
-		grass: grass == smokes,
-		match: match == smokes,
-	}
 	for {
-		has[smokes] = true // smokes -> infinite smoke
-		select {
-		case sign := <-signal:
-			chosen = sign
-		case item := <-t.paper:
-			t.Lock()
-			if chosen != smokes {
-				t.paper <- item
-			} else {
-				// consume supply
-				has[item] = true
-			}
-			t.Unlock()
-			fmt.Println(name, "recveived ", has, smokeMap[item])
-		case item := <-t.grass:
-			t.Lock()
-			if chosen != smokes {
-				t.paper <- item
-			} else {
-				// consume supply
-				has[item] = true
-			}
-			t.Unlock()
-			fmt.Println(name, "recveived ", has, smokeMap[item])
-		case item := <-t.match:
-			t.Lock()
-			if chosen != smokes {
-				t.paper <- item
-			} else {
-				// consume supply
-				has[item] = true
-			}
-			t.Unlock()
-			fmt.Println(name, "recveived ", has, smokeMap[item], item)
+		chosen = <-signal // blocks
+
+		if smokes != chosen {
+			continue
 		}
 
-		if has[grass] && has[paper] && has[match] {
-			fmt.Printf("%s is smoking, owner of %s\n", name, smokeMap[smokes])
-			time.Sleep(time.Millisecond * 10)
-			// Finish consuming
-			has[paper], has[match], has[grass] = false, false, false
-			has[smokes] = true // infinite supply ;)
-			wg.Done()
+		fmt.Printf("Table: %d grass: %d match: %d\n", len(t.paper), len(t.grass), len(t.match))
+		select {
+		case <-t.paper:
+		case <-t.grass:
+		case <-t.match:
 		}
+		fmt.Printf("Table: %d grass: %d match: %d\n", len(t.paper), len(t.grass), len(t.match))
+		time.Sleep(10 * time.Millisecond)
+		select {
+		case <-t.paper:
+		case <-t.grass:
+		case <-t.match:
+		}
+		fmt.Printf("Table: %d grass: %d match: %d\n", len(t.paper), len(t.grass), len(t.match))
+		fmt.Printf("%s smokes a cigarette\n", name)
+		time.Sleep(time.Millisecond * 500)
+		wg.Done()
+		time.Sleep(time.Millisecond * 100)
 	}
 }
 
-const LIMIT = 10
+const LIMIT = 1
 
 var wg *sync.WaitGroup
 
@@ -129,7 +102,6 @@ func main() {
 		signals[i] = signal
 		go smoker(table, names[i], i, signal)
 	}
-
+	fmt.Printf("%s, %s, %s, sit with \n%s, %s, %s\n\n", names[0], names[1], names[2], smokeMap[0], smokeMap[1], smokeMap[2])
 	arbitrate(table, signals)
-
 }

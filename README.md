@@ -2,7 +2,7 @@
 
 - [x] Dining Philosophers
 - [x] Sleeping Barber
-- [ ] Cigarrette Smokers
+- [x] Cigarrette Smokers
 
 See the directory readmes
 
@@ -15,3 +15,7 @@ See the directory readmes
 A barber checks on the waiting room and then either cuts hair or goes to sleep (if there is no one in the waiting room). Concurrently, the customer checks on the barber and if the barber is sleeping, the barber wakes up.
 
 If the customer checks on the barber when the barber is checking on an _empty_ waiting room, the barber would go back to sleep and the customer would go wait, possibly **forever**.
+
+## Cigarette Smokers
+
+There are three smokers around a table, each with unlimited supply of either paper, tobacco, or paper. A fourth party, with an unlimited supply of everything, chooses at random a smoker, and put on the table the supplies needed for a cigarrette. The chosen smoker smokes, and the process should repeat indefinitely.
